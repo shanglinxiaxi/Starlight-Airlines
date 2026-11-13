@@ -37,8 +37,10 @@ jobs:
             exit 1
           fi
 
-          yes | "$SDKMANAGER" --licenses
+          printf 'y\n%.0s' {1..100} | "$SDKMANAGER" --licenses
+
           "$SDKMANAGER" --install \
+  
             "platform-tools" \
             "platforms;android-35" \
             "build-tools;35.0.0"
