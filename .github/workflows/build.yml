@@ -28,22 +28,19 @@ jobs:
       - name: Install Android SDK packages
         shell: bash
         run: |
+          set -e
           echo "ANDROID_HOME=$ANDROID_HOME"
-          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" \
-            -type f -name sdkmanager | sort -V | tail -n 1)
+
+          SDKMANAGER=$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
 
           if [ -z "$SDKMANAGER" ]; then
-            echo "sdkmanager not found"
+            echo "ERROR: sdkmanager not found"
             exit 1
           fi
 
           printf 'y\n%.0s' {1..100} | "$SDKMANAGER" --licenses
 
-          "$SDKMANAGER" --install \
-  
-            "platform-tools" \
-            "platforms;android-35" \
-            "build-tools;35.0.0"
+          "$SDKMANAGER" --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Install Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -53,21 +50,22 @@ jobs:
       - name: Extract Android project
         shell: bash
         run: |
+          set -e
+
           ZIP_FILE=$(find . -maxdepth 2 -type f -iname "*.zip" -print -quit)
 
           if [ -z "$ZIP_FILE" ]; then
-            echo "No project ZIP found."
+            echo "No project ZIP found"
             exit 1
           fi
 
           mkdir -p "$RUNNER_TEMP/delta-source"
           unzip -q "$ZIP_FILE" -d "$RUNNER_TEMP/delta-source"
 
-          SETTINGS_FILE=$(find "$RUNNER_TEMP/delta-source" \
-            -name settings.gradle.kts -print -quit)
+          SETTINGS_FILE=$(find "$RUNNER_TEMP/delta-source" -name settings.gradle.kts -print -quit)
 
           if [ -z "$SETTINGS_FILE" ]; then
-            echo "settings.gradle.kts not found."
+            echo "settings.gradle.kts not found"
             exit 1
           fi
 
@@ -75,11 +73,9 @@ jobs:
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
       - name: Build and test APK
+        shell: bash
         run: |
-          gradle -p "$PROJECT_DIR" \
-            :app:testDebugUnitTest \
-            :app:assembleDebug \
-            --stacktrace
+          gradle -p "$PROJECT_DIR" :app:testDebugUnitTest :app:assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
